@@ -1,0 +1,42 @@
+import pandas as pd
+
+try:
+    # Carregar as duas planilhas
+    print("Carregando planilhas...")
+    planilha_antiga = pd.read_excel('Controle_diario_HelpTech_CAOAChery.xlsx')
+    planilha_nova = pd.read_excel('RelatorioChamados_2024-06-05T09-51-41.xlsx')
+    
+    # Define a coluna que será utilizada para identificar as linhas (chave primária)
+    chave_primaria = 'Nº Chamado'
+
+    # Converter as colunas de datas para o formato desejado
+    colunas_datas = ['Último Comentárui', 'D.A', 'Data Finalizado', 'Data Abertura OS']
+    for coluna in colunas_datas:
+        planilha_antiga[coluna] = pd.to_datetime(planilha_antiga[coluna], errors='coerce')
+        planilha_nova[coluna] = pd.to_datetime(planilha_nova[coluna], errors='coerce')
+
+    # Loop pelos índices da planilha nova e adicionar manualmente as linhas correspondentes à planilha antiga
+    for index in range(len(planilha_nova)):
+        num_chamado = planilha_nova.loc[index, chave_primaria]
+        print(f"Verificando chamado {num_chamado}...")
+        if num_chamado in planilha_antiga[chave_primaria].values:
+            # Se o número do chamado já existe na planilha antiga, atualize as informações correspondentes
+            print(f"Chamado {num_chamado} já existe na planilha antiga. Atualizando informações...")
+            planilha_antiga.loc[planilha_antiga[chave_primaria] == num_chamado, planilha_nova.columns] = planilha_nova.loc[index].values
+        else:
+            # Se o número do chamado não existe na planilha antiga, adicione essa linha à planilha antiga
+            print(f"Chamado {num_chamado} não existe na planilha antiga. Adicionando nova linha...")
+            nova_linha = pd.DataFrame([planilha_nova.loc[index]], columns=planilha_nova.columns)
+            planilha_antiga = pd.concat([planilha_antiga, nova_linha], ignore_index=True)
+
+    # Salva a planilha atualizada
+    print("Salvando planilha atualizada...")
+    planilha_antiga.to_excel('Controle_diario_HelpTech_CAOAChery_atualizada.xlsx', index=False)
+    print("Planilha atualizada com sucesso!")
+    
+except PermissionError as e:
+    print(f"Erro de permissão: {e}. Verifique se o arquivo não está aberto em outro programa e se você tem permissões adequadas.")
+except FileNotFoundError as e:
+    print(f"Arquivo não encontrado: {e}. Verifique se o caminho do arquivo está correto.")
+except Exception as e:
+    print(f"Ocorreu um erro: {e}")
